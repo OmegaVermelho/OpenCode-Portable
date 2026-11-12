@@ -1,0 +1,27 @@
+# Runtime data and secrets
+data/ai_settings.env
+data/home/
+data/config/
+data/opencode/
+data/app_data/
+data/local_app_data/
+data/cache/
+data/logs/
+data/ollama/
+data/npm-cache/
+
+# Optional local tools (ripgrep/fzf)
+tools/bin/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs and temp files
+*.log
+__pycache__/
+*.pyc
+*.tmp
