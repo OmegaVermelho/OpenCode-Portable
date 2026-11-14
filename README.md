@@ -1,14 +1,10 @@
 # MEGA-CODE-4
 
-> Portable cyber coding agent with local-only runtime, encrypted settings and Coarena-ready AI integration.
+> Assistente portátil de codificação com integração de IA e foco em segurança.
 
-This project evolves the original portable OpenCode wrapper into a hardened MEGA-CODE-4 runtime: local-first execution, encrypted credentials, local-only dashboard, and MCP lazy-loading for security workflows.
+**MEGA-CODE-4** é o nome do projeto e da experiência de uso. O repositório GitHub ainda se chama `OpenCode-Portable`; portanto, os comandos de clone abaixo usam esse endereço até que o repositório seja renomeado nas configurações do GitHub.
 
-Nothing is written to the host machine: `HOME`, `USERPROFILE`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, and `XDG_CACHE_HOME` are all redirected inside `data/`.
-
----
-
-## Quick Start
+## Início rápido
 
 ### Linux / macOS
 
@@ -27,71 +23,64 @@ cd OpenCode-Portable
 START.bat
 ```
 
-On first launch the agent asks for the Coarena API endpoint and model, then stores the credential set encrypted using a master password inside `data/ai_settings.env`.
+Na primeira execução, o launcher solicita configurações do provedor Coarena e uma senha mestre para proteger as configurações salvas. O endpoint e o identificador do modelo dependem dos valores fornecidos pela Coarena; os valores de exemplo nos arquivos não substituem os dados oficiais da sua conta.
 
----
-
-## Project Structure
+## Uso dos launchers
 
 ```text
-OpenCode-Portable/
-├── START.bat                  Windows entry point
-├── start.sh                   Linux/macOS entry point
-├── opencode.jsonc             Unified OpenCode + MCP configuration
-├── Dockerfile                 Sandbox base image
-├── data/                      Portable runtime data (host-isolated)
-│   ├── ai_settings.env        Encrypted credentials
-│   ├── home/
-│   ├── config/
-│   ├── app_data/
-│   ├── local_app_data/
-│   ├── cache/
-│   ├── logs/
-│   └── opencode/
-├── engine/
-│   ├── opencode-linux-x64/
-│   ├── opencode-linux-arm64/
-│   ├── opencode-windows-x64/
-│   ├── opencode-darwin-x64/
-│   └── opencode-darwin-arm64/
-├── tools/
-│   ├── secure_env.py
-│   ├── mcp_router.py
-│   ├── start_dashboard.js
-│   ├── web/
-│   └── ...
-├── docs/
-│   ├── SECURITY.md
-│   └── MCP_ROUTING.md
-├── README.md
-├── LICENSE
-└── .gitignore
+./start.sh --help              Exibe as opções disponíveis (Linux/macOS)
+./start.sh --setup             Abre a configuração do provedor
+./start.sh --dir /caminho/projeto
+./start.sh --quick             Inicia sem o menu de seleção
 ```
 
----
+No Windows, use `START.bat --help`, `START.bat --setup` ou `START.bat --dir C:\caminho\projeto`.
 
-## Security Model
+## Estrutura principal
 
-- Runtime data is redirected to `data/`
-- Secrets are encrypted at rest using AES-256 + PBKDF2
-- Dashboard and MCP endpoints bind to `127.0.0.1` only
-- MCP tools use lazy loading and activate only when contextually required
-- Launchers keep the host clean and do not write outside the portable folder
+```text
+OpenCode-Portable/             Nome atual do repositório GitHub
+├── START.bat                  Launcher para Windows
+├── start.sh                   Launcher para Linux/macOS
+├── opencode.jsonc             Configuração declarativa de exemplo
+├── Dockerfile                 Imagem inicial de sandbox
+├── data/                      Dados e configurações locais do runtime
+├── engine/                    Binários OpenCode incluídos
+├── tools/                     Utilitários e dashboard
+└── docs/                      Documentação de segurança e MCP
+```
 
----
+## Configuração e credenciais
 
-## MEGA-CODE-4 Identity
+- A configuração de execução e as credenciais ficam associadas à pasta `data/`.
+- `tools/secure_env.py` usa AES-GCM com uma chave derivada por PBKDF2; requer o pacote Python `cryptography`.
+- Use uma senha mestre forte e não a compartilhe nem a inclua em comandos, scripts ou commits.
+- Não envie credenciais, arquivos de runtime ou a pasta `data/` para o GitHub.
+- O arquivo `opencode.jsonc` é uma configuração de referência; confirme a compatibilidade das opções com a versão do engine antes de ativar integrações.
 
-MEGA-CODE-4 is the operating identity of the portable project. It combines:
+## Portabilidade: limites importantes
 
-- local-only runtime portability
-- code generation and analysis workflows
-- secure context routing for MCP tools
-- dashboard status visibility
-- encrypted credential management
+Os launchers redirecionam diretórios de configuração e dados conhecidos para a pasta local. Isso **não garante ausência absoluta de rastros no computador**: sistema operacional, antivírus, swap, logs, backups e ferramentas de sincronização podem registrar ou copiar informações. Para reduzir a exposição, use um dispositivo confiável, encerre o processo antes de remover a unidade e não use dados sensíveis em computadores compartilhados.
 
----
+## MCP e serviços locais
 
-## License
+As integrações MCP descritas na configuração exigem instalação e configuração próprias. Os nomes de pacotes, argumentos e endpoints de exemplo devem ser validados com a documentação oficial de cada servidor antes do uso. Mantenha serviços locais vinculados a `127.0.0.1`, desativados quando não necessários e limitados a sistemas e repositórios para os quais você tem autorização.
 
-The portable wrapper is released under the MIT license; see [LICENSE](LICENSE).
+O roteador em `tools/mcp_router.py` é um utilitário de classificação de texto: ele imprime uma sugestão de servidores a ativar e, sozinho, **não inicia nem controla servidores MCP**. Não interprete a configuração declarativa como garantia de integração automática ou lazy loading funcional.
+
+## Dashboard
+
+O servidor de exemplo está em `tools/start_dashboard.js`. Ele escuta em localhost e protege as rotas com um Bearer Token. A rota `/api/token` expõe o token para o próprio cliente local; não exponha a porta em interfaces de rede nem encaminhe-a por proxy. O dashboard é uma base inicial, não uma implantação endurecida para produção.
+
+## Sandbox
+
+O `Dockerfile` é um ponto de partida, não uma garantia de isolamento completa. Antes de executar ferramentas de segurança, revise a imagem e a configuração do container. Prefira usuário não-root, remova capabilities, use filesystem somente leitura quando possível, limite a rede e não monte diretórios do host desnecessários. Uma VM dedicada pode oferecer isolamento adicional.
+
+## Documentação
+
+- [Notas de segurança](docs/SECURITY.md)
+- [Roteamento MCP](docs/MCP_ROUTING.md)
+
+## Licença
+
+O wrapper portátil é distribuído sob a licença MIT. Consulte [LICENSE](LICENSE).
