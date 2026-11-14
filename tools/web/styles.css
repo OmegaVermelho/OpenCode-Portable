@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MEGA-CODE-4</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="mega-header">
+      <div class="brand">
+        <div class="brand-mark" aria-label="Logo MEGA-CODE-4">M4</div>
+        <div class="brand-copy">
+          <div class="brand-name">MEGA-CODE-4</div>
+          <div class="brand-subtitle">Portable Cyber Coding Agent</div>
+        </div>
+      </div>
+
+      <div class="status-strip" aria-live="polite">
+        <span class="badge online"><span class="dot"></span> MCP: HexStrike ON</span>
+        <span class="badge online"><span class="dot"></span> CyberStrike ON</span>
+        <span class="badge neutral"><span class="dot"></span> Model: Fable 5</span>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="panel">
+        <h1>Dashboard de Operação Segura</h1>
+        <p>Portal local do agente MEGA-CODE-4. Todo o acesso ao dashboard exige Bearer Token e escuta local em 127.0.0.1.</p>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

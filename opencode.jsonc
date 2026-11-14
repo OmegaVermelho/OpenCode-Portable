@@ -1,0 +1,189 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+title MEGA-CODE-4 Portable
+
+rem ============================================================
+rem MEGA-CODE-4 - Windows launcher
+rem Redirects runtime env to dataolder and encrypts keys at rest.
+rem ============================================================
+
+set "ROOT_DIR=%~dp0"
+if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
+
+set "DATA_DIR=%ROOT_DIR%\data"
+set "HOME_DIR=%DATA_DIR%\home"
+set "CONFIG_HOME=%DATA_DIR%\config"
+set "APP_DATA=%DATA_DIR%\app_data"
+set "LOCAL_APP_DATA=%DATA_DIR%\local_app_data"
+set "CACHE_DIR=%DATA_DIR%\cache"
+set "LOG_DIR=%DATA_DIR%\logs"
+set "OC_DATA_DIR=%DATA_DIR%\opencode"
+set "ENV_FILE=%DATA_DIR%\ai_settings.env"
+set "SECURE_ENV=%ROOT_DIR%\tools\secure_env.py"
+
+mkdir "%HOME_DIR%" 2>nul
+mkdir "%CONFIG_HOME%" 2>nul
+mkdir "%APP_DATA%" 2>nul
+mkdir "%LOCAL_APP_DATA%" 2>nul
+mkdir "%CACHE_DIR%" 2>nul
+mkdir "%LOG_DIR%" 2>nul
+mkdir "%OC_DATA_DIR%" 2>nul
+
+set "HOME=%HOME_DIR%"
+set "USERPROFILE=%HOME_DIR%"
+set "APPDATA=%APP_DATA%"
+set "LOCALAPPDATA=%LOCAL_APP_DATA%"
+set "XDG_CONFIG_HOME=%CONFIG_HOME%"
+set "XDG_DATA_HOME=%APP_DATA%"
+set "XDG_CACHE_HOME=%CACHE_DIR%"
+set "PATH=%ROOT_DIR%\tools;%PATH%"
+
+echo.
+echo  __  __   ___   ____   ____   _   _   ____  _____  ____   ____   ____
+echo |  \/  | / _ \ / ___| / ___| | | | | / ___|| ____|/ ___| / ___||  _ \
+echo | |\/| || | | |\___ \| |     | |_| | \___ \|  _|  \___ \| |    | |_) |
+echo | |  | || |_| | ___) | |___  |  _  |  ___) | |___  ___) | |___ |  __/
+echo |_|  |_| \___/ |____/ \_____| |_| |_| |____/ |_____|____/ \_____|_|
+echo.
+echo      MEGA-CODE-4 Portable Cyber Coding Agent
+echo.
+
+set "PROJECT_DIR=%CD%"
+set "SETUP_ONLY=0"
+
+:parse_args
+if "%~1"=="" goto args_done
+if /i "%~1"=="--setup" (
+  set "SETUP_ONLY=1"
+  shift
+  goto parse_args
+)
+if /i "%~1"=="--dir" (
+  if not "%~2"=="" set "PROJECT_DIR=%~2"
+  shift
+  shift
+  goto parse_args
+)
+if /i "%~1"=="--help" goto show_help
+shift
+goto parse_args
+
+:show_help
+echo Usage: START.bat [--dir PROJECT] [--setup]
+exit /b 0
+
+:args_done
+if not exist "%PROJECT_DIR%" (
+  echo [ERROR] Project directory not found: %PROJECT_DIR%
+  exit /b 1
+)
+
+if not exist "%SECURE_ENV%" (
+  echo [ERROR] Missing crypto helper: %SECURE_ENV%
+  exit /b 1
+)
+
+if exist "%ENV_FILE%" (
+  echo [~] Configurações cifradas detectadas.
+  set /p "MASTER_PASSWORD=Master Password: "
+) else (
+  echo [~] Nenhuma configuração cifrada. Configure a Coarena.
+  set /p "MASTER_PASSWORD=Master Password: "
+  set /p "COARENA_BASE_URL=URL da Coarena [https://api.coarena.example/v1]: "
+  if not defined COARENA_BASE_URL set "COARENA_BASE_URL=https://api.coarena.example/v1"
+  set /p "COARENA_API_KEY=Chave da API Coarena: "
+  set /p "COARENA_MODEL=Modelo [Fable-5]: "
+  if not defined COARENA_MODEL set "COARENA_MODEL=Fable-5"
+)
+
+if not defined MASTER_PASSWORD (
+  echo [ERROR] A Master Password não pode ficar vazia.
+  exit /b 1
+)
+
+if exist "%ENV_FILE%" (
+  python "%SECURE_ENV%" --decrypt --input "%ENV_FILE%" --output "%TEMP%\mega_env.tmp" --password "%MASTER_PASSWORD%" || (
+    echo [ERROR] Falha ao descriptografar as credenciais.
+    exit /b 1
+  )
+  call "%TEMP%\mega_env.tmp"
+  del "%TEMP%\mega_env.tmp"
+) else (
+  set "AI_PROVIDER=coarena"
+  set "COARENA_BASE_URL=%COARENA_BASE_URL%"
+  set "COARENA_API_KEY=%COARENA_API_KEY%"
+  set "COARENA_MODEL=%COARENA_MODEL%"
+  set "OPENCODE_MODEL=coarena/%COARENA_MODEL%"
+  set "MCP_HEXSTRIKE=0"
+  set "MCP_CYBERSTRIKE=0"
+  (
+    echo # MEGA-CODE-4 settings
+    echo COARENA_API_KEY=%COARENA_API_KEY%
+    echo COARENA_BASE_URL=%COARENA_BASE_URL%
+    echo COARENA_MODEL=%COARENA_MODEL%
+    echo AI_PROVIDER=%AI_PROVIDER%
+    echo OPENCODE_MODEL=%OPENCODE_MODEL%
+    echo MCP_HEXSTRIKE=%MCP_HEXSTRIKE%
+    echo MCP_CYBERSTRIKE=%MCP_CYBERSTRIKE%
+  ) > "%TEMP%\mega_env.tmp"
+  python "%SECURE_ENV%" --encrypt --input "%TEMP%\mega_env.tmp" --output "%ENV_FILE%" --password "%MASTER_PASSWORD%"
+  del "%TEMP%\mega_env.tmp"
+)
+
+set "OC_BIN=%ROOT_DIR%\engine\opencode-windows-x64\opencode.exe"
+if not exist "%OC_BIN%" (
+  echo [ERROR] OpenCode engine not found: %OC_BIN%
+  exit /b 1
+)
+
+(
+  echo {
+  echo   "data": {
+  echo     "directory": "%OC_DATA_DIR%"
+  echo   },
+  echo   "providers": {
+  echo     "coarena": {
+  echo       "apiKey": "%COARENA_API_KEY%",
+  echo       "baseURL": "%COARENA_BASE_URL%",
+  echo       "models": ["%COARENA_MODEL%"]
+  echo     }
+  echo   },
+  echo   "agents": {
+  echo     "mega": {
+  echo       "model": "coarena/%COARENA_MODEL%"
+  echo     }
+  echo   },
+  echo   "mcp": {
+  echo     "lazyLoad": true,
+  echo     "servers": {
+  echo       "hexstrike": {
+  echo         "enabled": %MCP_HEXSTRIKE%,
+  echo         "host": "127.0.0.1",
+  echo         "port": 8889
+  echo       },
+  echo       "cyberstrike": {
+  echo         "enabled": %MCP_CYBERSTRIKE%,
+  echo         "host": "127.0.0.1",
+  echo         "port": 8890
+  echo       }
+  echo     }
+  echo   }
+  echo }
+) > "%HOME_DIR%\.opencode.json"
+
+echo.
+echo =========================================================
+echo MEGA-CODE-4 - Portable Cyber Coding Agent
+echo =========================================================
+echo Engine      : %OC_BIN%
+echo Model       : %COARENA_MODEL%
+echo Project     : %PROJECT_DIR%
+echo Data        : %OC_DATA_DIR%
+echo MCP         : [HexStrike %MCP_HEXSTRIKE%] [CyberStrike %MCP_CYBERSTRIKE%]
+echo =========================================================
+echo.
+
+cd /d "%PROJECT_DIR%"
+"%OC_BIN%"
+exit /b %ERRORLEVEL%
